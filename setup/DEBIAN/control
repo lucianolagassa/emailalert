@@ -1,0 +1,7 @@
+Package: emailalert
+Version: 0.12.11.19-0850
+Architecture: all
+Maintainer: Luciano Javier Lagassa <lucianolagassa@gmail.com>
+Section: partner/web
+Priority: optional
+Description: Sistema de Alertas Via eMail

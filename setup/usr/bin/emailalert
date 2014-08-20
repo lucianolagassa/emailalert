@@ -1,0 +1,139 @@
+#! /bin/bash
+About()
+{
+ echo "----------------------------------------"
+ echo "               eMailAlert"
+ echo "            v0.12.11.19-0850"
+ echo "----------------------------------------"
+ echo "             LAGA Systems"
+ echo "        Luciano Javier Lagassa"
+ echo "        info@lagasystems.com.ar"
+ echo "        www.lagasystems.com.ar"
+ echo "----------------------------------------" 
+}
+# eMail Config
+if [ -f "/etc/emailalert.conf" ]
+then
+ . "/etc/emailalert.conf"
+ if [ "$HostName" = "NOMBRE DE EQUIPO" ]
+ then
+  About
+  echo "Error Archivos de Configuración Con Valores de Origen."
+  echo "Edite el Archivo Base en /etc/emailalert.conf."
+  exit 1
+ fi
+else
+ About
+ echo "Error Archivos de Configuración No Existe."
+ echo '## eMailAlert Config' > /etc/emailalert.conf
+ echo 'HostName="NOMBRE DE EQUIPO"' >> /etc/emailalert.conf
+ echo 'eMailUser="CORREO@PROVEEDOR.COM"' >> /etc/emailalert.conf
+ echo 'eMailPass="CONTRASEÑA"' >> /etc/emailalert.conf
+ echo 'eMailTo="DESTINO@LOQUESEA.COM"' >> /etc/emailalert.conf
+ echo 'eMailServer="SERVIDOR-SMTP.COM:PUERTO-SMTP"' >> /etc/emailalert.conf
+ echo 'eMailSSL="MODOCAPASEGURA(yes-no)"' >> /etc/emailalert.conf
+ echo '##' >> /etc/emailalert.conf
+ echo "Se Creo Archivo Base en /etc/emailalert.conf, Completar con Datos de Correo"
+ exit 1
+fi
+#
+# eMail Commands
+TempData="No Hay Datos, Error de Comando"
+DayFolder=`date +"Dia%u"`
+case $1 in
+ 'backup')
+  TempData=`ls -l /mnt/*espaldos*/$DayFolder/hora*`
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Estado de Respaldos en $HostName" -m "Estado de Respaldos en $HostName\n$TempData" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'backupfail')
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Respaldo No Completado en $HostName" -m "Respaldo No Completado en $HostName" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'disk')
+  TempData=`df -h`
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Estado del Disco en $HostName" -m "Estado del Disco en $HostName\n$TempData" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'intruder')
+  TempData='No Hay Datos de Intrusos, Error de Comando'
+  if [ -f "/var/log/auth.log" ]
+  then
+   TempData=`grep "Invalid user" /var/log/auth.log | awk '{print$1$2$5$10}'`
+  fi
+  if [ -f "/var/log/secure" ]
+  then
+   TempData=`grep "Invalid user" /var/log/secure | awk '{print$1$2$5$10}'`
+  fi
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Informes de Intrusos en $HostName" -m "Informes de Intrusos en $HostName\n$TempData" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'raid')
+  TempData=`cat /proc/mdstat`
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Estado del RAID en $HostName" -m "Estado del RAID en $HostName\n$TempData" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass
+ ;;
+ 'restart')
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Reinicio de Servidor $HostName" -m "Reinicio de Servidor $HostName" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'start')
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Inicio de Servidor $HostName" -m "Inicio de Servidor $HostName" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'syncok')
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Sincronizado $HostName con $2" -m "Sincronizado $HostName con $2" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'syncno')
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Error al Sincronizar $HostName con $2" -m "Error al Sincronizar $HostName con $2" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'test')
+  About
+  echo "Prueba de Correo"
+  sendEmail -q -f $eMailUser -t $eMailTo -u "eMailAlert: Prueba de Correo desde $HostName" -m "eMailAlert: Prueba de Correo desde $HostName" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'tty')
+  TempData=`who | cut -d"(" -f2 | cut -d")" -f1`
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Acceso en $HostName" -m "Acceso en $HostName por $USER desde $TempData" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'turnoff')
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Apagado de Servidor $HostName" -m "Apagado de Servidor $HostName" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'users')
+  TempData=`who`
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Usuarios en $HostName" -m "Usuarios en $HostName\n$TempData" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ 'vbox')
+  TempData=`ps aux | grep virtualbox | grep -v grep`
+  if [ -n "`echo $TempData | grep -i 'IAS1'`" ]
+  then
+   IAS1="ON"
+  else
+   IAS1="OFF"
+  fi 
+  if [ -n "`echo $TempData | grep -i 'IAS2'`" ]
+  then
+   IAS2="ON"
+  else
+   IAS2="OFF"
+  fi 
+  if [ -n "`echo $TempData | grep -i 'LZ-Server-Web'`" ]
+  then
+   Web="ON"
+  else
+   Web="OFF"
+  fi 
+  if [ -n "`echo $TempData | grep -i 'LZ-Server-VPN'`" ]
+  then
+   VPN="ON"
+  else
+   VPN="OFF"
+  fi 
+  if [ -n "`echo $TempData | grep -i 'LZ-Server-ODB1'`" ]
+  then
+   ODB="ON"
+  else
+   ODB="OFF"
+  fi 
+  sendEmail -q -f $eMailUser -t $eMailTo -u "Estado de los Servidores Virtuales en $HostName" -m "Estado de los Servidores Virtuales en $HostName\nLZ-Server-IAS1: $IAS1\nLZ-Server-IAS2: $IAS2\nLZ-Server-VPN: $VPN\nLZ-Server-Web: $Web\nLZ-Server-ODB: $ODB" -s $eMailServer -o tls=$eMailSSL -xu $eMailUser -xp $eMailPass &
+ ;;
+ *)
+  About
+  echo $TempData
+  exit 1
+ ;;
+esac
+exit 0
