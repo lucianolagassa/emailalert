@@ -1,4 +1,4 @@
-emailalert
+eMailAlert
 ==========
 hola, cree este script bash hace muchos años, realmente lo use para que me llegue info de los servidores que manejo, ya que otras soluciones requerían instalar muchas dependencias y tener servicios en ejecución y esto afecta mucho el rendimiento, es un simple código que utiliza el cliente smtp sendEmail (http://caspian.dotconf.net/menu/Software/SendEmail/) que esta disponible en los repos de ubuntu. luego se puede llamar al script desde bash para que dispare la alerta según sea el comando. espero que le puede ser útil. el archivo de config se genera una vez ejecutado por primera vez.
 Sistema de Alertas Via eMail para Ubuntu Linux.
